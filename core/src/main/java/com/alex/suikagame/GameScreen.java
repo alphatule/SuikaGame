@@ -1,6 +1,8 @@
 package com.alex.suikagame;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -23,6 +25,10 @@ public class GameScreen implements Screen {
     private float accumulator = 0f;
 
     private Array<Fruit> fruits;
+
+    // Preview
+    private Fruit.Type nextFruitType;
+    private Texture nextFruitTexture;
 
 
     @Override
@@ -63,7 +69,56 @@ public class GameScreen implements Screen {
             @Override public void postSolve(Contact contact, ContactImpulse impulse) {}
         });
 
+        Gdx.input.setInputProcessor(new InputAdapter() {
+            @Override
+            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                spawnRandomFruit();
+                return true;
+            }
+
+            @Override
+            public boolean keyDown(int keycode) {
+                if (keycode == Input.Keys.SPACE) {
+                    spawnRandomFruit();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        generateNextFruit();
+
     }
+
+    private void generateNextFruit() {
+        Fruit.Type[] types = Fruit.Type.values();
+        int maxIndex = 3; // solo frutas pequeñas
+        int random = (int)(Math.random() * maxIndex);
+        nextFruitType = types[random];
+        nextFruitTexture = new Texture("fruits/" + nextFruitType.textureFile);
+    }
+
+    private void disposeNextFruit() {
+        if (nextFruitTexture != null) {
+            nextFruitTexture.dispose();
+        }
+    }
+
+
+    private void spawnRandomFruit() {
+        // Usar la fruta que estaba en espera
+        Fruit.Type type = nextFruitType;
+
+        float x = 400 / 32f;
+        float y = 430 / 32f;
+
+        spawnFruitAt(type, x, y);
+
+        // Generar nueva fruta en espera
+        disposeNextFruit();
+        generateNextFruit();
+    }
+
 
     private void handleMerge(Fruit f1, Fruit f2) {
         // Evita que se fusione más de una vez por contacto
@@ -134,6 +189,20 @@ public class GameScreen implements Screen {
         for (Fruit fruit : fruits) {
             fruit.render(batch);
         }
+
+        if (nextFruitTexture != null) {
+            float scale = 6; // aumenta este valor para agrandar
+
+            float size = nextFruitType.size * scale;
+            float x = 400 - size / 2;
+            float y = 450 - size / 2;
+
+            batch.draw(nextFruitTexture,
+                x / 32f, y / 32f,
+                size / 32f, size / 32f
+            );
+        }
+
         batch.end();
     }
 
@@ -157,6 +226,7 @@ public class GameScreen implements Screen {
     public void hide() {}
     @Override
     public void dispose() {
+        disposeNextFruit();
         batch.dispose();
         img.dispose();
     }

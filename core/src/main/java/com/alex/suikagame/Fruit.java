@@ -57,10 +57,16 @@ public class Fruit {
 
     public void render(SpriteBatch batch) {
         Vector2 pos = body.getPosition();
-        float size = type.size * 4; // en píxeles
+        float sizeMeters = type.size * 4 / 32f; // tamaño en metros
 
-        batch.draw(texture, pos.x * 32 - size / 2, pos.y * 32 - size / 2, size, size);
+        batch.draw(texture,
+            pos.x - sizeMeters / 2,
+            pos.y - sizeMeters / 2,
+            sizeMeters,
+            sizeMeters
+        );
     }
+
 
     public Type getType() {
         return type;

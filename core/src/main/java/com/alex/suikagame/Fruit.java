@@ -42,7 +42,8 @@ public class Fruit {
         body = world.createBody(def);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(type.size * 2 / 32f); // ajusta al tamaño
+        float radius = Math.max(type.size * 2 / 32f, 0.1f); // evita valores demasiado bajos
+        shape.setRadius(radius);
 
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = shape;

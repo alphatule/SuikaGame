@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.physics.box2d.joints.FrictionJoint;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.TimeUtils;
 
 public class GameScreen implements Screen {
 
@@ -23,8 +24,11 @@ public class GameScreen implements Screen {
     private OrthographicCamera camera;
 
     private float accumulator = 0f;
+    private float lastSpawnTime = 0;
 
     private Array<Fruit> fruits;
+    private Array<Fruit> fruitQueue = new Array<>();
+
 
     // Preview
     private Fruit.Type nextFruitType;
@@ -72,14 +76,14 @@ public class GameScreen implements Screen {
         Gdx.input.setInputProcessor(new InputAdapter() {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                spawnRandomFruit();
+                if (canSpawn()) spawnRandomFruit();
                 return true;
             }
 
             @Override
             public boolean keyDown(int keycode) {
                 if (keycode == Input.Keys.SPACE) {
-                    spawnRandomFruit();
+                    if (canSpawn()) spawnRandomFruit();
                     return true;
                 }
                 return false;
@@ -98,6 +102,13 @@ public class GameScreen implements Screen {
         nextFruitTexture = new Texture("fruits/" + nextFruitType.textureFile);
     }
 
+    private boolean canSpawn() {
+        float now = TimeUtils.nanoTime();
+        if ((now - lastSpawnTime) < 300_000_000) return false; // 0.3s
+        lastSpawnTime = now;
+        return true;
+    }
+
     private void disposeNextFruit() {
         if (nextFruitTexture != null) {
             nextFruitTexture.dispose();
@@ -112,7 +123,7 @@ public class GameScreen implements Screen {
         float x = 400 / 32f;
         float y = 430 / 32f;
 
-        spawnFruitAt(type, x, y);
+        queueFruit(type, x, y);
 
         // Generar nueva fruta en espera
         disposeNextFruit();
@@ -144,13 +155,13 @@ public class GameScreen implements Screen {
             f2.dispose();
 
             // Crear fruta fusionada
-            spawnFruitAt(next, x, y);
+            queueFruit(next, x, y);
         }
     }
 
-    private void spawnFruitAt(Fruit.Type type, float x, float y) {
-        Fruit fruit = new Fruit(world, type, x, y);
-        fruits.add(fruit);
+    private void queueFruit(Fruit.Type type, float x, float y) {
+        Fruit f = new Fruit(world, type, x, y);
+        fruitQueue.add(f);
     }
 
 
@@ -181,6 +192,13 @@ public class GameScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         // Actualizar mundo físico
         stepWorld(delta);
+
+        for (Fruit f : fruitQueue) {
+            fruits.add(f);
+        }
+        fruitQueue.clear();
+
+
         camera.update();
         debugRenderer.render(world, camera.combined);
 
